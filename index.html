@@ -83,12 +83,14 @@
           $("#solution").html(html);
         } else if (msg.type === "graph") {
           let html = "";
-          if (msg.content.length > 0) {
-            html = "<h1>Graphs</h1>";
+          if (msg.content) {
+            if (msg.content.length > 0) {
+              html = "<h1>Graphs</h1>";
+            }
+            msg.content.forEach((item) => {
+              html += `<img src='${item.graphImageData}'>`;
+            });
           }
-          msg.content.forEach((item) => {
-            html += `<img src='${item.graphImageData}'>`;
-          });
 
           $("#graph").html(html);
         }
