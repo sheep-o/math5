@@ -63,15 +63,17 @@ io.on("connection", (socket) => {
       .then((res) => res.json())
       .then((res) => res.results[0].tags[0].actions[0].customData)
       .catch((err) => console.error(err));
-
     let msg = {
       type: "solution",
       content: [],
     };
 
     if (JSON.parse(JSON.parse(data).previewText).mathSolverResult != null) {
-      const actions = JSON.parse(JSON.parse(data).previewText).mathSolverResult
-        .actions;
+      const mathSolverResult = JSON.parse(
+        JSON.parse(data).previewText
+      ).mathSolverResult;
+      const actions = mathSolverResult.actions;
+      socket.send({ type: "graph", content: mathSolverResult.allGraphData });
       let errors = false;
       await Promise.all(
         actions.map(async (action) => {

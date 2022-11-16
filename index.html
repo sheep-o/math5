@@ -17,6 +17,7 @@
     <img id="img" src="" />
     <div id="base"></div>
     <div id="solution"></div>
+    <div id="graph"></div>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script
       src="https://cdn.socket.io/4.5.3/socket.io.min.js"
@@ -69,6 +70,16 @@
           });
 
           $("#solution").html(html);
+        } else if (msg.type === "graph") {
+          let html = "";
+          if (msg.content.length > 0) {
+            html = "<h1>Graphs</h1>";
+          }
+          msg.content.forEach((item) => {
+            html += `<img src='${item.graphImageData}'>`;
+          });
+
+          $("#graph").html(html);
         }
       });
     </script>
