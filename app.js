@@ -73,42 +73,75 @@ io.on("connection", (socket) => {
       const actions = JSON.parse(JSON.parse(data).previewText).mathSolverResult
         .actions;
       let errors = false;
-      await Promise.all(actions.map(async (action) => {
-        action.templateSteps = await Promise.all(action.templateSteps.map(async (e) => {
-          return {
-            templateName: e.templateName,
-            steps: await Promise.all(e.steps.map(
-              async (e) => {
-                const data = (await mjAPI.typeset({
-                  math: String.raw`${e.expression.replaceAll("$", "")}`,
-                  format: "TeX", // or "inline-TeX", "MathML"
-                  mml: true, // or svg:true, or html:true
-                }))
-                let mml = ""
-                if (data.errors) {
-                  errors = true
-                } else {
-                  mml = data.mml
-                }
-                return {
-                  step: e.step,
-                  expression: mml
-                }
-              })),
-          };
-        }));
-        const data = await mjAPI.typeset({
-          math: String.raw`${action.solution.replaceAll("$", "")}`,
-          format: "TeX", // or "inline-TeX", "MathML"
-          mml: true, // or svg:true, or html:true
-        });
-        if (data.errors) errors = true
-        if (!errors) {
-          msg.content.push({ action: action, html: data.mml });
-        } else {
-          socket.send({ type: "solution", content: "error" });
-        }
-      }));
+      await Promise.all(
+        actions.map(async (action) => {
+          action.templateSteps = await Promise.all(
+            action.templateSteps.map(async (e) => {
+              return {
+                templateName: e.templateName,
+                steps: await Promise.all(
+                  e.steps.map(async (e) => {
+                    const data = await mjAPI.typeset({
+                      math: String.raw`${e.expression.replaceAll("$", "")}`,
+                      format: "TeX", // or "inline-TeX", "MathML"
+                      mml: true, // or svg:true, or html:true
+                    });
+                    async function replaceAsync(str, regex, asyncFn) {
+                      const promises = [];
+                      str.replaceAll(regex, (match, ...args) => {
+                        const promise = asyncFn(match, ...args);
+                        promises.push(promise);
+                        return match;
+                      });
+                      const result = await Promise.all(promises);
+                      return str.replace(regex, () => result.shift());
+                    }
+                    e.step = await replaceAsync(
+                      e.step,
+                      /\$(.*?)\$/g,
+                      async (e) => {
+                        const answer = await mjAPI.typeset({
+                          math: String.raw`${e.replaceAll("$", "")}`,
+                          format: "inline-TeX", // or "inline-TeX", "MathML"
+                          mml: true, // or svg:true, or html:true
+                        });
+                        let mml = "";
+                        if (answer.errors) {
+                          errors = true;
+                        } else {
+                          mml = answer.mml;
+                        }
+                        return mml;
+                      }
+                    );
+                    let mml = "";
+                    if (data.errors) {
+                      errors = true;
+                    } else {
+                      mml = data.mml;
+                    }
+                    return {
+                      step: e.step,
+                      expression: mml,
+                    };
+                  })
+                ),
+              };
+            })
+          );
+          const data = await mjAPI.typeset({
+            math: String.raw`${action.solution.replaceAll("$", "")}`,
+            format: "TeX", // or "inline-TeX", "MathML"
+            mml: true, // or svg:true, or html:true
+          });
+          if (data.errors) errors = true;
+          if (!errors) {
+            msg.content.push({ action: action, html: data.mml });
+          } else {
+            socket.send({ type: "solution", content: "error" });
+          }
+        })
+      );
 
       socket.send(msg);
     }
