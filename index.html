@@ -1,69 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title></title>
-	<style>
-		body {
-			display: flex;
-			flex-direction: column;
-			justify-content: center;
-			align-items: center;
-		}
-	</style>
-</head>
-<body>
-	<input type="file" id="asd" />
-	<img id="img" src="" />
-	<div id="base"></div>
-	<div id="solution"></div>
-	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-	<script src="https://cdn.socket.io/4.5.3/socket.io.min.js" integrity="sha384-WPFUvHkB1aHA5TDSZi6xtDgkF0wXJcIIxXhC6h8OT8EH3fC5PWro5pWJ1THjcfEi" crossorigin="anonymous"></script>
-	<script>
-	const socket = io()
+  <head>
+    <meta charset="UTF-8" />
+    <title></title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <input type="file" id="asd" />
+    <img id="img" src="" />
+    <div id="base"></div>
+    <div id="solution"></div>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script
+      src="https://cdn.socket.io/4.5.3/socket.io.min.js"
+      integrity="sha384-WPFUvHkB1aHA5TDSZi6xtDgkF0wXJcIIxXhC6h8OT8EH3fC5PWro5pWJ1THjcfEi"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      const socket = io();
 
-	let img = ''
+      let img = "";
 
-	function readImage(input) {
-		if ( input.files && input.files[0] ) {
-			var FR= new FileReader();
-			FR.onload = function(e) {
-				$('#img').attr( "src", e.target.result );
-				//$('#base').text( e.target.result );
-				socket.emit('read', e.target.result)
-			};       
-			FR.readAsDataURL( input.files[0] );
-		}
-	}
+      function readImage(input) {
+        if (input.files && input.files[0]) {
+          var FR = new FileReader();
+          FR.onload = function (e) {
+            $("#img").attr("src", e.target.result);
+            //$('#base').text( e.target.result );
+            socket.emit("read", e.target.result);
+          };
+          FR.readAsDataURL(input.files[0]);
+        }
+      }
 
-	$('#asd').change(function(){
-		readImage( this );
-		socket.emit('test', 'test')
-	});
+      $("#asd").change(function () {
+        readImage(this);
+        socket.emit("test", "test");
+      });
 
-	socket.on('message', msg => {
-		console.info('Message received...')
-		console.log(msg)
+      socket.on("message", (msg) => {
+        console.info("Message received...");
+        console.log(msg);
 
-		if (msg.type === 'latex') {
-			$('#base').html(`<i>${msg.content.latex}</i>` + '<br>' + msg.content.html)
-			socket.emit('solve', msg.content.latex)
-		} else if (msg.type === 'solution') {
-			let html = ''
+        if (msg.type === "latex") {
+          $("#base").html(
+            `<i>${msg.content.latex}</i>` + "<br>" + msg.content.html
+          );
+          socket.emit("solve", msg.content.latex);
+        } else if (msg.type === "solution") {
+          let html = "";
+          msg.content.forEach((item) => {
+            if (item.action) {
+              html += `<h1>${item.action.actionName}</h1>` + "<br>" + item.html;
+              item.action.templateSteps.forEach((item) => {
+                html += `<h2>${item.templateName}</h2> <br>`;
+                item.steps.forEach((item) => {
+                  html += item.step + "<br>" + item.expression + "<br>";
+                });
+              });
+            }
+          });
 
-			//if (msg.content.length > 1)
-				//msg.content.pop()
-
-			msg.content.forEach(item => {
-				if (item.action) {
-					html += `<h2>${item.action.actionName}</h2>` + '<br>' + item.html
-				}
-			})
-
-			$('#solution').html(html)
-		}
-	})
-
-	</script>
-</body>
+          $("#solution").html(html);
+        }
+      });
+    </script>
+  </body>
 </html>
