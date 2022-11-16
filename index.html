@@ -15,7 +15,9 @@
   <body>
     <input type="file" id="asd" />
     <img id="img" src="" />
+    <div id="loading"></div>
     <div id="base"></div>
+    <div id="loading2"></div>
     <div id="solution"></div>
     <div id="graph"></div>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -44,16 +46,25 @@
       $("#asd").change(function () {
         readImage(this);
         socket.emit("test", "test");
+        $("#loading").html("Reading Image...");
+        $("#base").html("");
+        $("#loading2").html("");
+        $("#solution").html("");
+        $("#graph").html("");
       });
 
       socket.on("message", (msg) => {
+        $("#loading").html("");
+        $("#loading2").html("");
         console.info("Message received...");
         console.log(msg);
 
         if (msg.type === "latex") {
+          $("#loading2").html("Solving Problem...");
           $("#base").html(
             `<i>${msg.content.latex}</i>` + "<br>" + msg.content.html
           );
+          $("#loading2").html("");
           socket.emit("solve", msg.content.latex);
         } else if (msg.type === "solution") {
           let html = "";
