@@ -102,6 +102,7 @@ def east_detect(image):
             confidences.append(scoresData[x])
     oldBoxes = non_max_suppression(np.array(rects), probs=confidences)
     boxes = []
+    print(oldBoxes)
     # Merges boxes that are too close to each other
     for (startX, startY, endX, endY) in oldBoxes:
         startX = int(startX * rW)
@@ -118,6 +119,11 @@ def east_detect(image):
                     and startY - endY2 < height / 2
                     and startX2 - endX < height
                     and startX - endX2 < height
+                ) or (
+                    endY - startY2 < height / 2
+                    and endY2 - startY < height / 2
+                    and endX - startX2 < height
+                    and endX2 - startX < height
                 ):
                     # Merges the boxes
                     startX = min(startX, startX2)
@@ -130,22 +136,21 @@ def east_detect(image):
             if not merged:
                 break
         boxes.append((startX, startY, endX, endY))
-
     images = []
     # loop over the bounding boxes
     # for (startX, startY, endX, endY) in boxes:
     #     scale the bounding box coordinates based on the respective
     #     ratios
     #     draw the bounding box on the image
+    #     startX = int(startX * rW)
+    #     startY = int(startY * rH)
+    #     endX = int(endX * rW)
+    #     endY = int(endY * rH)
     #     cv2.rectangle(orig, (startX, startY), (endX, endY), (0, 255, 0), 5)
-    for (startX, startY, endX, endY) in oldBoxes:
+    for (startX, startY, endX, endY) in boxes:
         # scale the bounding box coordinates based on the respective
         # ratios
         # draw the bounding box on the image
-        startX = int(startX * rW)
-        startY = int(startY * rH)
-        endX = int(endX * rW)
-        endY = int(endY * rH)
         images.append(orig[startY:endY, startX:endX])
         # cv2.rectangle(orig, (startX, startY), (endX, endY), (255, 0, 0), 2)
     print(time.time() - start)
