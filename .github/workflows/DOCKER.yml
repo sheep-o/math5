@@ -3,6 +3,7 @@ name: Docker Build/Publish Beta
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
