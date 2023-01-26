@@ -75,7 +75,7 @@ io.on("connection", (socket) => {
             type: "latex",
             content: { latex: latex, html: data.mml, id },
           });
-        } else socket.send({ type: "latex", content: "error" });
+        } else socket.send({ type: "latex", content: {latex:"error", id} });
       }
     );
   });

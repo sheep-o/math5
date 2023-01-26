@@ -37,10 +37,10 @@
         style="width: 1280px; height: 960px; display: none"
       ></canvas>
     </div>
-    <div id="searching"></div>
+    <h1 id="searching"></h1>
     <button id="takePicture">Take Picture</button>
     <input type="file" id="file" />
-    <h1 id="solutions"></h1>
+    <div id="solutions"></div>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script
       src="https://cdn.socket.io/4.5.3/socket.io.min.js"
@@ -85,9 +85,14 @@
 
         if (msg.type === "latex") {
           $("#2loading" + id).html("Solving Problem...");
-          $("#base").html(
+          $("#base" + id).html(
             `<i>${msg.content.latex}</i>` + "<br>" + msg.content.html
           );
+          if (msg.content.latex == "error" || msg.content.latex == "") {
+            $("#base" + id).html(
+            `<h2>Could not find any math problems in the image.</h2>`
+          );
+          }
           $("#2loading" + id).html("");
           socket.emit("solve", { latex: msg.content.latex, id });
         } else if (msg.type === "solution") {
