@@ -22,6 +22,12 @@
         justify-content: center;
         align-items: center;
       }
+      #input {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
       h1 {
         font-weight: 900;
       }
@@ -36,10 +42,12 @@
         id="canvas"
         style="width: 1280px; height: 960px; display: none"
       ></canvas>
+      <label htmlfor="cameraSelect">Select Camera Below</label>
+      <select id="cameraSelect"></select>
+      <button id="takePicture">Take Picture</button>
+      <input type="file" id="file" />
     </div>
     <h1 id="searching"></h1>
-    <button id="takePicture">Take Picture</button>
-    <input type="file" id="file" />
     <div id="solutions"></div>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script
@@ -90,8 +98,8 @@
           );
           if (msg.content.latex == "error" || msg.content.latex == "") {
             $("#base" + id).html(
-            `<h2>Could not find any math problems in the image.</h2>`
-          );
+              `<h2>Could not find any math problems in the image.</h2>`
+            );
           }
           $("#2loading" + id).html("");
           socket.emit("solve", { latex: msg.content.latex, id });
@@ -149,11 +157,26 @@
       });
       $(document).ready(function () {
         video = document.getElementById("video");
+        navigator.mediaDevices.enumerateDevices().then((devices) => {
+          videoDevices = devices.filter(
+            (device) => device.kind === "videoinput"
+          );
+          updateCamera(videoDevices[0].deviceId);
+          videoDevices = videoDevices.map((videoDevice) => {
+            return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
+          });
+          $("#cameraSelect").html(videoDevices.join(""));
+        });
+      });
+      function updateCamera(id) {
         // access video stream from webcam
         navigator.mediaDevices
           .getUserMedia({
             video: true,
             audio: false,
+            deviceId: {
+              exact: id,
+            },
           })
           // on success, stream it in video tag
           .then(function (stream) {
@@ -163,6 +186,9 @@
           .catch(function (err) {
             console.log("An error occurred: " + err);
           });
+      }
+      $("#cameraSelect").change(() => {
+        updateCamera($("#cameraSelect").val());
       });
       $("#takePicture").click(function () {
         let video2 = $("video");

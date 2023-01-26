@@ -25,12 +25,13 @@ io.on("connection", (socket) => {
     fs.mkdir("in").catch(() => 1);
     let fileName = `in/in${String(Math.random()).replace("0.", "")}.png`;
     let output = `out/${String(Math.random()).replace("0.", "")}/`;
+    exec("mkdir out");
     await fs
       .writeFile(fileName, img.replace("data:image/png;base64,", ""), {
         encoding: "base64",
       })
-      .catch((e) => console.log(e));
-    exec(`./readtext.py ${fileName} ${output}`, async function (a, b, c) {
+      .catch((e) => e);
+    exec(`./readtext.py ${fileName} ${output}`, async function () {
       let files = [];
       try {
         files = await fs.readdir(output);
@@ -75,7 +76,7 @@ io.on("connection", (socket) => {
             type: "latex",
             content: { latex: latex, html: data.mml, id },
           });
-        } else socket.send({ type: "latex", content: {latex:"error", id} });
+        } else socket.send({ type: "latex", content: { latex: "error", id } });
       }
     );
   });

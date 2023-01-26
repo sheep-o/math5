@@ -82,8 +82,7 @@ except:
 os.mkdir(str(sys.argv[2]))
 print(len(images))
 for x in range(len(images)):
-    cv2.imwrite(str(sys.argv[2]) + "/img" + str(x) + ".jpg", images[x])
-    # try:
-    #     cv2.imwrite(str(sys.argv[2]) + "/img" + str(x) + ".jpg", images[x])
-    # except:
-    #     1
+    try:
+        cv2.imwrite(str(sys.argv[2]) + "/img" + str(x) + ".jpg", images[x])
+    except:
+        1
