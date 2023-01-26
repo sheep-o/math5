@@ -72,7 +72,7 @@ def east_detect(image):
             sin = np.sin(angle)
             # use the geometry volume to derive the width and height of
             # the bounding box
-            heightBoost = 0.5
+            heightBoost = 0.2
             widthBoost = 1 / 6
             h = xData0[x] + xData2[x] * (1 + heightBoost * 2)
             w = xData1[x] + xData3[x] * (1 + widthBoost * 2)

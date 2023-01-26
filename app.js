@@ -4,8 +4,8 @@ const server = require("http").Server(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 const mjAPI = require("mathjax-node");
-
-const CAM_ENDPOINT = "https://www.bing.com/cameraexp/api/v1/getlatex";
+const fs = require("fs/promises");
+const { exec } = require("child_process");
 
 server.listen(3000, (_) => {
   console.log("listening...");
@@ -21,8 +21,35 @@ io.on("connection", (socket) => {
     },
     body: "",
   };
-
-  socket.on("read", async (img) => {
+  socket.on("locate", async (img) => {
+    fs.mkdir("in").catch(() => 1);
+    let fileName = `in/in${String(Math.random()).replace("0.", "")}.png`;
+    let output = `out/${String(Math.random()).replace("0.", "")}/`;
+    await fs
+      .writeFile(fileName, img.replace("data:image/png;base64,", ""), {
+        encoding: "base64",
+      })
+      .catch((e) => console.log(e));
+    exec(`./readtext.py ${fileName} ${output}`, async function (a, b, c) {
+      let files = [];
+      try {
+        files = await fs.readdir(output);
+      } catch (e) {
+        console.log("Error locating text in picture");
+      }
+      let data = [];
+      for (const file in files) {
+        data.push(
+          await fs.readFile(output + files[file], { encoding: "base64" })
+        );
+      }
+      socket.send({
+        type: "locate",
+        content: data.map((e) => "data:image/png;base64," + e),
+      });
+    });
+  });
+  socket.on("read", async ({ img, id }) => {
     options.body = `{"data": "${img.replace(
       "data:image/png;base64,",
       ""
@@ -46,14 +73,14 @@ io.on("connection", (socket) => {
         if (!data.errors) {
           socket.send({
             type: "latex",
-            content: { latex: latex, html: data.mml },
+            content: { latex: latex, html: data.mml, id },
           });
         } else socket.send({ type: "latex", content: "error" });
       }
     );
   });
 
-  socket.on("solve", async (latex) => {
+  socket.on("solve", async ({ latex, id }) => {
     options.body = JSON.stringify({ latexExpression: latex });
 
     const data = await fetch(
@@ -65,7 +92,10 @@ io.on("connection", (socket) => {
       .catch((err) => console.error(err));
     let msg = {
       type: "solution",
-      content: [],
+      content: {
+        solution: [],
+        id,
+      },
     };
 
     if (JSON.parse(JSON.parse(data).previewText).mathSolverResult != null) {
@@ -73,7 +103,10 @@ io.on("connection", (socket) => {
         JSON.parse(data).previewText
       ).mathSolverResult;
       const actions = mathSolverResult.actions;
-      socket.send({ type: "graph", content: mathSolverResult.allGraphData });
+      socket.send({
+        type: "graph",
+        content: { graph: mathSolverResult.allGraphData, id },
+      });
       let errors = false;
       await Promise.all(
         actions.map(async (action) => {
@@ -138,7 +171,7 @@ io.on("connection", (socket) => {
           });
           if (data.errors) errors = true;
           if (!errors) {
-            msg.content.push({ action: action, html: data.mml });
+            msg.content.solution.push({ action: action, html: data.mml });
           } else {
             socket.send({ type: "solution", content: "error" });
           }

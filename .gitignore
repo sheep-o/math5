@@ -2,4 +2,4 @@ node_modules/
 .DS_STORE
 out/
 input.jpg
-in.jpg
+in/
