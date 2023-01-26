@@ -28,7 +28,7 @@ def east_detect(image):
         startY = int(startY)
         endX = int(endX)
         endY = int(endY)
-        heightIncrease = (endY - startY) / 2.2
+        heightIncrease = (endY - startY) / 4
         widthIncrease = (endY - startY) * 1.4
         while True:
             merged = False
