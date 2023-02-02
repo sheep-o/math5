@@ -29,7 +29,7 @@ def east_detect(image):
         endX = int(endX)
         endY = int(endY)
         heightIncrease = (endY - startY) / 4
-        widthIncrease = (endY - startY) * 1.4
+        widthIncrease = (endY - startY) * 1.5
         while True:
             merged = False
             for (startX2, startY2, endX2, endY2) in boxes:
@@ -57,6 +57,7 @@ def east_detect(image):
                 break
         boxes.append((startX, startY, endX, endY))
     images = []
+    boxes.sort(key=lambda x: x[0]/10+x[1])
     # loop over the bounding boxes
     # for (startX, startY, endX, endY) in oldBoxes:
     #     scale the bounding box coordinates based on the respective
