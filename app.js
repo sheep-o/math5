@@ -200,6 +200,7 @@ app.post("/screenshot", async (req, res) => {
       width: 480,
       height: 480,
     },
+    args: ["--no-sandbox"],
   });
 
   // 2. Open a new page
