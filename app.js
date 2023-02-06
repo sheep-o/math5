@@ -6,11 +6,12 @@ const io = new Server(server);
 const mjAPI = require("mathjax-node");
 const fs = require("fs/promises");
 const { exec } = require("child_process");
+const sqlite3 = require("sqlite3");
+const { open } = require("sqlite");
 
 server.listen(3000, (_) => {
   console.log("listening...");
 });
-
 io.on("connection", (socket) => {
   console.log("new connection");
 
@@ -82,8 +83,23 @@ io.on("connection", (socket) => {
   });
 
   socket.on("solve", async ({ latex, id }) => {
+    const connect = await open({
+      filename: "db.db",
+      driver: sqlite3.Database,
+    });
+    await connect.run("CREATE TABLE IF NOT EXISTS solutions (id TEXT PRIMARY KEY, solution TEXT)");
+    const solution = await connect.all("SELECT * FROM solutions WHERE id = ?", [String(latex)]);
+    if (solution.length > 0) {
+      const answer = JSON.parse(solution[0].solution)
+      answer.forEach(e => {
+        e.content.id = id;
+        socket.send(e);
+      });
+      connect.close();
+      return;
+    }
     options.body = JSON.stringify({ latexExpression: latex });
-
+    const response = [];
     const data = await fetch(
       "https://www.bing.com/cameraexp/api/v1/solvelatex",
       options
@@ -105,6 +121,10 @@ io.on("connection", (socket) => {
       ).mathSolverResult;
       const actions = mathSolverResult.actions;
       socket.send({
+        type: "graph",
+        content: { graph: mathSolverResult.allGraphData, id },
+      });
+      response.push({
         type: "graph",
         content: { graph: mathSolverResult.allGraphData, id },
       });
@@ -175,10 +195,13 @@ io.on("connection", (socket) => {
             msg.content.solution.push({ action: action, html: data.mml });
           } else {
             socket.send({ type: "solution", content: "error" });
+            response.push({ type: "solution", content: "error" });
           }
         })
       );
-
+      response.push(msg);
+      connect.run("INSERT OR IGNORE INTO solutions VALUES (?, ?)", [String(latex), JSON.stringify(response)]);
+      connect.close()
       socket.send(msg);
     }
   });
