@@ -87,11 +87,15 @@ io.on("connection", (socket) => {
       filename: "db.db",
       driver: sqlite3.Database,
     });
-    await connect.run("CREATE TABLE IF NOT EXISTS solutions (id TEXT PRIMARY KEY, solution TEXT)");
-    const solution = await connect.all("SELECT * FROM solutions WHERE id = ?", [String(latex)]);
+    await connect.run(
+      "CREATE TABLE IF NOT EXISTS solutions (id TEXT PRIMARY KEY, solution TEXT)"
+    );
+    const solution = await connect.all("SELECT * FROM solutions WHERE id = ?", [
+      String(latex),
+    ]);
     if (solution.length > 0) {
-      const answer = JSON.parse(solution[0].solution)
-      answer.forEach(e => {
+      const answer = JSON.parse(solution[0].solution);
+      answer.forEach((e) => {
         e.content.id = id;
         socket.send(e);
       });
@@ -200,8 +204,11 @@ io.on("connection", (socket) => {
         })
       );
       response.push(msg);
-      connect.run("INSERT OR IGNORE INTO solutions VALUES (?, ?)", [String(latex), JSON.stringify(response)]);
-      connect.close()
+      connect.run("INSERT OR IGNORE INTO solutions VALUES (?, ?)", [
+        String(latex),
+        JSON.stringify(response),
+      ]);
+      connect.close();
       socket.send(msg);
     }
   });
