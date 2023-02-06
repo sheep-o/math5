@@ -76,7 +76,7 @@ io.on("connection", (socket) => {
             type: "latex",
             content: { latex: latex, html: data.mml, id },
           });
-        } else socket.send({ type: "latex", content: { latex: "error", id } });
+        } else socket.send({ type: "latex", content: { latex: "", id } });
       }
     );
   });
@@ -186,4 +186,42 @@ io.on("connection", (socket) => {
 
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
+});
+app.get("/headless", (req, res) => {
+  res.sendFile(__dirname + "/headless.html");
+});
+app.use(express.json({ limit: "50mb" }));
+app.post("/screenshot", async (req, res) => {
+  const puppeteer = require("puppeteer");
+
+  // 1. Launch the browser
+  const browser = await puppeteer.launch({
+    defaultViewport: {
+      width: 480,
+      height: 480,
+    },
+  });
+
+  // 2. Open a new page
+  const page = await browser.newPage();
+
+  // 3. Navigate to URL
+  await page.goto("http://localhost:3000/headless");
+  const upload = await page.$("#file");
+  // Turn filetoUpload into a file
+  const fileName = Math.random().toString(36).substring(7);
+  await fs.mkdir("in").catch(() => 1);
+  await fs.writeFile(`in/${fileName}.png`, req.body.file, {
+    encoding: "base64",
+  });
+  await upload.uploadFile(`in/${fileName}.png`);
+  // Wait until finished id has the text finished
+  await page.waitForSelector("#finished", { visible: true }).catch((e) => e);
+  // 4. Take screenshot
+  await page.screenshot({
+    path: `out/${fileName}screenshot.png`,
+    fullPage: true,
+  });
+  await browser.close();
+  res.sendFile(__dirname + `/out/${fileName}screenshot.png`);
 });

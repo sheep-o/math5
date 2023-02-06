@@ -34,17 +34,8 @@
     </style>
   </head>
   <body>
+    <p id="finished" style="display: none"></p>
     <div id="input">
-      <div class="camera">
-        <video id="video">Video stream not available.</video>
-      </div>
-      <canvas
-        id="canvas"
-        style="width: 1280px; height: 960px; display: none"
-      ></canvas>
-      <label htmlfor="cameraSelect">Select Camera Below</label>
-      <select id="cameraSelect"></select>
-      <button id="takePicture">Take Picture</button>
       <input type="file" id="file" />
     </div>
     <h1 id="searching"></h1>
@@ -56,6 +47,10 @@
       crossorigin="anonymous"
     ></script>
     <script>
+      let progress = {
+        latex: 0,
+        solution: 0,
+      };
       const socket = io();
 
       let img = "";
@@ -93,19 +88,22 @@
 
         if (msg.type === "latex") {
           $("#2loading" + id).html("Solving Problem...");
-          $("#base" + id).html(
-            `<i>${msg.content.latex}</i>` + "<br>" + msg.content.html
-          );
+          $("#base" + id).html(msg.content.html);
+          progress.latex -= 1;
           if (msg.content.latex == "error" || msg.content.latex == "") {
-            $("#base" + id).html(
-              `<h2>Could not find any math problems in the image.</h2>`
-            );
+            $("#base" + id).html(``);
+            $("#img" + id).attr("src", ``);
+            $("#loading" + id).html(``);
+            $("#2loading" + id).html(``);
+            $("#solution" + id).html(``);
           } else {
+            $("#2loading" + id).html("");
             socket.emit("solve", { latex: msg.content.latex, id });
+            progress.solution += 1;
           }
-          $("#2loading" + id).html("");
         } else if (msg.type === "solution") {
           let html = "";
+          progress.solution -= 1;
           msg.content.solution.forEach((item) => {
             if (item.action) {
               html += `<h1>${item.action.actionName}</h1>` + "<br>" + item.html;
@@ -117,7 +115,10 @@
               });
             }
           });
-
+          if (progress.solution <= 0 && progress.latex <= 0) {
+            $("#finished").show();
+            $("#finished").text("Finished");
+          }
           $("#solution" + id).html(html);
         } else if (msg.type === "graph") {
           let html = "";
@@ -132,7 +133,6 @@
 
           $("#graph" + id).html(html);
         } else if (msg.type === "locate") {
-          $("#input").show();
           $("#searching").text("");
           let id = String(Math.random()).replace("0.", "");
           let img = $("#searching").val();
@@ -144,6 +144,7 @@
                     <div id="graph${id}"></div>`;
           socket.emit("read", { img, id });
           for (const entry in msg.content) {
+            progress.latex += 1;
             let id = String(Math.random()).replace("0.", "");
             html += `<img id="img${id}" src="${msg.content[entry]}" />
                     <div id="loading${id}">Reading Image...</div>
@@ -155,60 +156,6 @@
           }
           $("#solutions").html(html);
         }
-      });
-      $(document).ready(function () {
-        video = document.getElementById("video");
-        navigator.mediaDevices.enumerateDevices().then((devices) => {
-          videoDevices = devices.filter(
-            (device) => device.kind === "videoinput"
-          );
-          updateCamera(videoDevices[0].deviceId);
-          videoDevices = videoDevices.map((videoDevice) => {
-            return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
-          });
-          $("#cameraSelect").html(videoDevices.join(""));
-        });
-      });
-      function updateCamera(id) {
-        // access video stream from webcam
-        navigator.mediaDevices
-          .getUserMedia({
-            video: true,
-            audio: false,
-            deviceId: {
-              exact: id,
-            },
-          })
-          // on success, stream it in video tag
-          .then(function (stream) {
-            video.srcObject = stream;
-            video.play();
-          })
-          .catch(function (err) {
-            console.log("An error occurred: " + err);
-          });
-      }
-      $("#cameraSelect").change(() => {
-        updateCamera($("#cameraSelect").val());
-      });
-      $("#takePicture").click(function () {
-        let video2 = $("video");
-        var context = canvas.getContext("2d");
-        canvas.setAttribute("width", video2.width());
-        canvas.setAttribute("height", video2.height());
-        context.drawImage(
-          document.getElementById("video"),
-          0,
-          0,
-          context.canvas.width,
-          context.canvas.height
-        );
-
-        let data = document.getElementById("canvas").toDataURL("image/png");
-        socket.emit("locate", data);
-        $("#input").hide();
-        $("#searching").text("Locating Math Problems...");
-        $("#searching").val(data);
       });
     </script>
   </body>
