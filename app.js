@@ -8,6 +8,8 @@ const fs = require("fs/promises");
 const { exec } = require("child_process");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
+const sharp = require('sharp');
+
 
 server.listen(3000, (_) => {
   console.log("listening...");
@@ -242,9 +244,11 @@ app.post("/screenshot", async (req, res) => {
   // Turn filetoUpload into a file
   const fileName = Math.random().toString(36).substring(7);
   await fs.mkdir("in").catch(() => 1);
-  await fs.writeFile(`in/${fileName}.png`, req.body.file, {
+  await fs.writeFile(`in/${fileName}.jpg`, req.body.file, {
     encoding: "base64",
   });
+  // Convert to png
+  await sharp(`in/${fileName}.jpg`).png().toFile(`in/${fileName}.png`)
   await upload.uploadFile(`in/${fileName}.png`);
   // Wait until finished id has the text finished
   await page.waitForSelector("#finished", { visible: true }).catch((e) => e);
