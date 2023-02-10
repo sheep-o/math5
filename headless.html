@@ -71,8 +71,7 @@
 
       $("#file").change(function () {
         readImage(this);
-        $("#solutions").html(`<img id="img1" src="" />
-    <div id="loading1">Reading Image...</div>
+        $("#solutions").html(`<div id="loading1">Reading Image...</div>
     <div id="base1"></div>
     <div id="2loading1"></div>
     <div id="solution1"></div>
@@ -92,7 +91,6 @@
           progress.latex -= 1;
           if (msg.content.latex == "error" || msg.content.latex == "") {
             $("#base" + id).html(``);
-            $("#img" + id).attr("src", ``);
             $("#loading" + id).html(``);
             $("#2loading" + id).html(``);
             $("#solution" + id).html(``);
@@ -140,8 +138,7 @@
           $("#searching").text("");
           let id = String(Math.random()).replace("0.", "");
           let img = $("#searching").val();
-          let html = `<img id="img${id}" src="${img}" />
-                    <div id="loading${id}">Reading Image...</div>
+          let html = `<div id="loading${id}">Reading Image...</div>
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
@@ -150,8 +147,7 @@
           for (const entry in msg.content) {
             progress.latex += 1;
             let id = String(Math.random()).replace("0.", "");
-            html += `<img id="img${id}" src="${msg.content[entry]}" />
-                    <div id="loading${id}">Reading Image...</div>
+            html += `<div id="loading${id}">Reading Image...</div>
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
