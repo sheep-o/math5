@@ -8,8 +8,7 @@ const fs = require("fs/promises");
 const { exec } = require("child_process");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
-const sharp = require('sharp');
-
+const sharp = require("sharp");
 
 server.listen(3000, (_) => {
   console.log("listening...");
@@ -248,7 +247,7 @@ app.post("/screenshot", async (req, res) => {
     encoding: "base64",
   });
   // Convert to png
-  await sharp(`in/${fileName}.jpg`).png().toFile(`in/${fileName}.png`)
+  await sharp(`in/${fileName}.jpg`).png().toFile(`in/${fileName}.png`);
   await upload.uploadFile(`in/${fileName}.png`);
   // Wait until finished id has the text finished
   await page.waitForSelector("#finished", { visible: true }).catch((e) => e);
