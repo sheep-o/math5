@@ -16,7 +16,13 @@ RUN apt clean
 RUN mkdir app
 WORKDIR /app
 COPY . ./
-RUN python3 -m pip install -r requirements.txt || true
+RUN python3 -m pip install editdistance
+RUN python3 -m pip install lmdb
+RUN python3 -m pip install matplotlib
+RUN python3 -m pip install numpy
+RUN python3 -m pip install opencv-python
+RUN python3 -m pip install path
+RUN python3 -m pip install tensorflow
 RUN python3 -m pip cache purge
 RUN npm ci
 EXPOSE 3000
