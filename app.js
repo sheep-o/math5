@@ -203,10 +203,6 @@ io.on("connection", (socket) => {
           .shadowRoot.querySelector("#searchbox")
       )
       .catch(() => "1");
-    await page.screenshot({
-      path: `out/${fileName}screenshot.png`,
-      fullPage: true,
-    });
     if (input === "1") {
       socket.send({
         type: "answer",
