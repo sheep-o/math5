@@ -91,7 +91,7 @@
         console.info("Message received...");
         console.log(msg);
 
-        if (msg.type === "latex") {
+        if (msg.type === "text") {
           $("#2loading" + id).html("Solving Problem...");
           $("#base" + id).html(
             `<i>${msg.content.latex}</i>` + "<br>" + msg.content.html
@@ -103,7 +103,22 @@
           } else {
             socket.emit("solve", { latex: msg.content.latex, id });
           }
+          if (msg.content.text == "") {
+            $("#bingHeader" + id).html(`Could not find any text for bing`);
+          } else {
+            socket.emit("answer", { question: msg.content.text, id });
+            $("#bingHeader" + id).html(msg.content.text);
+            $("#bing" + id).html("Asking Bing for answers...");
+          }
           $("#2loading" + id).html("");
+        } else if (msg.type === "answer") {
+          if (msg.content.result[0] == "Failed to reach Bing") {
+            socket.emit("answer", { question: msg.content.question, id });
+          } else {
+            $("#bing" + id).html(
+              msg.content.result.map((e) => `<p>${e}</p>`).join("")
+            );
+          }
         } else if (msg.type === "solution") {
           let html = "";
           msg.content.solution.forEach((item) => {
@@ -141,7 +156,10 @@
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
-                    <div id="graph${id}"></div>`;
+                    <div id="graph${id}"></div>
+                    <h2>Bing Answer</h2>
+                    <div id="bingHeader${id}"></div>
+                    <div id="bing${id}"></div>`;
           socket.emit("read", { img, id });
           for (const entry in msg.content) {
             let id = String(Math.random()).replace("0.", "");
@@ -150,7 +168,10 @@
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
-                    <div id="graph${id}"></div>`;
+                    <div id="graph${id}"></div>
+                    <h2>Bing Answer</h2>
+                    <div id="bingHeader${id}"></div>
+                    <div id="bing${id}"></div>`;
             socket.emit("read", { img: msg.content[entry], id });
           }
           $("#solutions").html(html);

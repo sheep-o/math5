@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.9
 # The first argument is the path to the image and the second one is the output folder
 import cv2
 import time

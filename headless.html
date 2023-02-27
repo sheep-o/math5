@@ -50,6 +50,7 @@
       let progress = {
         latex: 0,
         solution: 0,
+        bing: 0,
       };
       const socket = io();
 
@@ -85,7 +86,7 @@
         console.info("Message received...");
         console.log(msg);
 
-        if (msg.type === "latex") {
+        if (msg.type === "text") {
           $("#2loading" + id).html("Solving Problem...");
           $("#base" + id).html(msg.content.html);
           progress.latex -= 1;
@@ -94,7 +95,11 @@
             $("#loading" + id).html(``);
             $("#2loading" + id).html(``);
             $("#solution" + id).html(``);
-            if (progress.solution <= 0 && progress.latex <= 0) {
+            if (
+              progress.solution <= 0 &&
+              progress.latex <= 0 &&
+              progress.bing <= 0
+            ) {
               $("#finished").show();
               $("#finished").text("Finished");
             }
@@ -102,6 +107,31 @@
             $("#2loading" + id).html("");
             socket.emit("solve", { latex: msg.content.latex, id });
             progress.solution += 1;
+          }
+          if (msg.content.text == "") {
+            $("#bingHeader" + id).html(`Could not find any text for bing`);
+          } else {
+            socket.emit("answer", { question: msg.content.text, id });
+            $("#bingHeader" + id).html(msg.content.text);
+            $("#bing" + id).html("Asking Bing for answers...");
+            progress.bing += 1;
+          }
+        } else if (msg.type === "answer") {
+          if (msg.content.result[0] == "Failed to reach Bing") {
+            socket.emit("answer", { question: msg.content.question, id });
+          } else {
+            progress.bing -= 1;
+            if (
+              progress.solution <= 0 &&
+              progress.latex <= 0 &&
+              progress.bing <= 0
+            ) {
+              $("#finished").show();
+              $("#finished").text("Finished");
+            }
+            $("#bing" + id).html(
+              msg.content.result.map((e) => `<p>${e}</p>`).join("")
+            );
           }
         } else if (msg.type === "solution") {
           let html = "";
@@ -117,7 +147,12 @@
               });
             }
           });
-          if (progress.solution <= 0 && progress.latex <= 0) {
+          if (
+            progress.solution <= 0 &&
+            progress.latex <= 0 &&
+            progress.bing <= 0 &&
+            progress.bing <= 0
+          ) {
             $("#finished").show();
             $("#finished").text("Finished");
           }
@@ -142,7 +177,10 @@
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
-                    <div id="graph${id}"></div>`;
+                    <div id="graph${id}"></div>
+                    <h2>Bing Answer</h2>
+                    <div id="bingHeader${id}"></div>
+                    <div id="bing${id}"></div>`;
           socket.emit("read", { img, id });
           for (const entry in msg.content) {
             progress.latex += 1;
@@ -151,7 +189,10 @@
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
-                    <div id="graph${id}"></div>`;
+                    <div id="graph${id}"></div>
+                    <h2>Bing Answer</h2>
+                    <div id="bingHeader${id}"></div>
+                    <div id="bing${id}"></div>`;
             socket.emit("read", { img: msg.content[entry], id });
           }
           $("#solutions").html(html);

@@ -4,3 +4,4 @@ out/
 input.jpg
 in/
 db.db
+.env

@@ -9,7 +9,9 @@ const { exec } = require("child_process");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 const sharp = require("sharp");
-
+const dotenv = require("dotenv");
+const puppeteer = require("puppeteer");
+dotenv.config({ path: ".env" });
 server.listen(3000, (_) => {
   console.log("listening...");
 });
@@ -57,32 +59,224 @@ io.on("connection", (socket) => {
       "data:image/png;base64,",
       ""
     )}", "inputForm": "Image"}`;
+    const [[latex, data], text] = await Promise.all([
+      new Promise(async (res) => {
+        const latex = await fetch(
+          "https://www.bing.com/cameraexp/api/v1/getlatex",
+          options
+        )
+          .then((res) => res.json())
+          .then((res) => res.latex)
+          .catch((err) => console.error(err));
 
-    const latex = await fetch(
-      "https://www.bing.com/cameraexp/api/v1/getlatex",
-      options
-    )
-      .then((res) => res.json())
-      .then((res) => res.latex)
-      .catch((err) => console.error(err));
-
-    mjAPI.typeset(
-      {
-        math: String.raw`${latex}`,
-        format: "TeX", // or "inline-TeX", "MathML"
-        mml: true, // or svg:true, or html:true
-      },
-      (data) => {
-        if (!data.errors) {
-          socket.send({
-            type: "latex",
-            content: { latex: latex, html: data.mml, id },
-          });
-        } else socket.send({ type: "latex", content: { latex: "", id } });
-      }
-    );
+        mjAPI.typeset(
+          {
+            math: String.raw`${latex}`,
+            format: "TeX", // or "inline-TeX", "MathML"
+            mml: true, // or svg:true, or html:true
+          },
+          (data) => {
+            if (!data.errors) {
+              res([latex, data.mml]);
+            } else res("", "");
+          }
+        );
+      }),
+      new Promise(async (res) => {
+        const fileName = Math.random().toString(36).substring(7);
+        await fs
+          .writeFile(
+            `in/in${fileName}.png`,
+            img.replace("data:image/png;base64,", ""),
+            {
+              encoding: "base64",
+            }
+          )
+          .catch((e) => e);
+        exec(
+          `./handwriting/main.py --img_file in/in${fileName}.png`,
+          (err, stdout) => {
+            if (!err) {
+              let text = stdout.split(
+                "Recognized6759347634567835768345678534267854:"
+              );
+              text = text[text.length - 1];
+              res(text.trim());
+            } else {
+              console.log(err);
+              res("");
+            }
+          }
+        );
+      }),
+    ]);
+    socket.send({ type: "text", content: { latex, data, text, id } });
   });
+  socket.on("answer", async ({ question, id }) => {
+    console.log("Asking bing for answer to " + question);
+    if (!process.env.MICROSOFT) {
+      socket.send({
+        type: "answer",
+        content: {
+          question,
+          result: ["Please set the MICROSOFT environment variable"],
+          id,
+        },
+      });
+      console.log("Set the MICROSOFT environment variable");
+      return;
+    }
+    const connect = await open({
+      filename: "db.db",
+      driver: sqlite3.Database,
+    });
+    await connect.run(
+      "CREATE TABLE IF NOT EXISTS answers (id TEXT PRIMARY KEY, answer TEXT)"
+    );
+    const answers = await connect.all("SELECT * FROM answers WHERE id=?", [
+      String(question),
+    ]);
+    if (answers.length > 0) {
+      const answer = JSON.parse(answers[0].answer);
+      socket.send({
+        type: "answer",
+        content: { result: answer, id, question },
+      });
+      connect.close();
+      return;
+    }
+    const browser = await puppeteer.launch({
+      defaultViewport: {
+        width: 1280,
+        height: 720,
+      },
+      args: ["--no-sandbox"],
+    });
 
+    // 2. Open a new page
+    const page = await browser.newPage().catch(() => "1");
+    if (page === "1") {
+      socket.send({
+        type: "answer",
+        content: {
+          question,
+          result: ["Failed to reach Bing"],
+          id,
+        },
+      });
+      console.error("Failed to reach Bing");
+      connect.close();
+      browser.close();
+      return;
+    }
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.100.0"
+    );
+    await page.goto("https://bing.com");
+    let reuslt = await page
+      .evaluate(`document.cookie = "_U=${process.env.MICROSOFT}"`)
+      .catch(() => "1");
+    if (reuslt === "1") {
+      socket.send({
+        type: "answer",
+        content: {
+          question,
+          result: ["Failed to reach Bing"],
+          id,
+        },
+      });
+      console.error("Failed to reach Bing 1");
+      connect.close();
+      browser.close();
+      return;
+    }
+    await new Promise((res) => setTimeout(res, 4000));
+    await page.goto(
+      `https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx`
+    );
+    await new Promise((res) => setTimeout(res, 1000));
+    const input = await page
+      .waitForFunction(() =>
+        document
+          .querySelector(".cib-serp-main")
+          .shadowRoot.querySelector("#cib-action-bar-main")
+          .shadowRoot.querySelector("#searchbox")
+      )
+      .catch(() => "1");
+    await page.screenshot({
+      path: `out/${fileName}screenshot.png`,
+      fullPage: true,
+    });
+    if (input === "1") {
+      socket.send({
+        type: "answer",
+        content: {
+          question,
+          result: ["Failed to reach Bing"],
+          id,
+        },
+      });
+      connect.close();
+      browser.close();
+      console.error("Failed to reach Bing 2");
+      return;
+    }
+    await input.type(question);
+    await page.keyboard.press("Enter");
+    const lol = await page
+      .waitForFunction(
+        () =>
+          document
+            .querySelector(".cib-serp-main")
+            .shadowRoot.querySelector("#cib-action-bar-main")
+            .shadowRoot.querySelector(".root")
+            .children[0].shadowRoot.querySelector(".typing-control-item")
+            .disabled
+      )
+      .catch(() => "1");
+    if (lol === "1") {
+      socket.send({
+        type: "answer",
+        content: {
+          question,
+          result: ["Failed to reach Bing"],
+          id,
+        },
+      });
+      connect.close();
+      browser.close();
+      console.error("Failed to reach Bing 3");
+      return;
+    }
+    await new Promise((res) => setTimeout(res, 500));
+    const result = await page
+      .evaluate(() => {
+        const elements = document
+          .querySelector(".cib-serp-main")
+          .shadowRoot.querySelector("#cib-conversation-main")
+          .shadowRoot.querySelector("#cib-chat-main").children;
+        const elements2 = elements[elements.length - 2].shadowRoot
+          .querySelector(".response-message-group")
+          .shadowRoot.querySelector("[type=text]")
+          .shadowRoot.querySelector(".ac-textBlock").children;
+        return Object.values(elements2).map((e) =>
+          Object.values(e.childNodes)
+            .filter((e) => (e.classList ?? [0])[0] != "ac-anchor")
+            .map((e) => e.textContent)
+            .join("")
+        );
+      })
+      .catch(() => ["error"]);
+    socket.send({ type: "answer", content: { result, question, id } });
+    if (result[0] !== "error") {
+      connect.run("INSERT OR IGNORE INTO answers VALUES (?, ?)", [
+        String(question),
+        JSON.stringify(result),
+      ]);
+    }
+    connect.close();
+    await browser.close();
+  });
   socket.on("solve", async ({ latex, id }) => {
     const connect = await open({
       filename: "db.db",
@@ -223,8 +417,6 @@ app.get("/headless", (req, res) => {
 });
 app.use(express.json({ limit: "50mb" }));
 app.post("/screenshot", async (req, res) => {
-  const puppeteer = require("puppeteer");
-
   // 1. Launch the browser
   const browser = await puppeteer.launch({
     defaultViewport: {

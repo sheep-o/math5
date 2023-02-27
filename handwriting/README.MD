@@ -1,0 +1,1 @@
+This is the handwriting reader from https://github.com/githubharald/SimpleHTR
