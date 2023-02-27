@@ -2,8 +2,8 @@ FROM node:18-bullseye
 RUN apt update && apt upgrade -y
 RUN apt install -y pip --no-install-recommends
 RUN apt install -y --no-install-recommends ffmpeg libsm6 libxext6 curl gnupg
-RUN pip install -r requirements.txt
-RUN pip cache purge
+RUN python3 -m pip install -r requirements.txt
+RUN python3 -m pip cache purge
 RUN apt install -y --no-install-recommends software-properties-common apt-transport-https wget ca-certificates gnupg2
 # Install microsoft-edge
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
