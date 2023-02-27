@@ -262,9 +262,9 @@ io.on("connection", (socket) => {
             .join("")
         );
       })
-      .catch(() => ["error"]);
+      .catch(() => ["Failed to reach Bing"]);
     socket.send({ type: "answer", content: { result, question, id } });
-    if (result[0] !== "error") {
+    if (result[0] !== "Failed to reach Bing") {
       connect.run("INSERT OR IGNORE INTO answers VALUES (?, ?)", [
         String(question),
         JSON.stringify(result),
