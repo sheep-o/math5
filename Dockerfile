@@ -16,7 +16,7 @@ RUN apt clean
 RUN mkdir app
 WORKDIR /app
 COPY . ./
-RUN python3 -m pip install -r requirements.txt
+RUN python3 -m pip install -r requirements.txt || true
 RUN python3 -m pip cache purge
 RUN npm ci
 EXPOSE 3000
