@@ -138,9 +138,9 @@
           progress.solution -= 1;
           msg.content.solution.forEach((item) => {
             if (item.action) {
-              html += `<h1>${item.action.actionName}</h1>` + "<br>" + item.html;
+              html += `<h2>${item.action.actionName}</h2>` + "<br>" + item.html;
               item.action.templateSteps.forEach((item) => {
-                html += `<h2>${item.templateName}</h2> <br>`;
+                html += `<h3>${item.templateName}</h3> <br>`;
                 item.steps.forEach((item) => {
                   html += item.step + "<br>" + item.expression + "<br>";
                 });
@@ -161,7 +161,7 @@
           let html = "";
           if (msg.content && msg.content.graph) {
             if (msg.content.graph.length > 0) {
-              html = "<h1>Graphs</h1>";
+              html = "<h2>Graphs</h2>";
             }
             msg.content.graph.forEach((item) => {
               html += `<img src='${item.graphImageData}'>`;
@@ -173,24 +173,26 @@
           $("#searching").text("");
           let id = String(Math.random()).replace("0.", "");
           let img = $("#searching").val();
-          let html = `<div id="loading${id}">Reading Image...</div>
+          let html = `<h1>Math Answer</h1>
+                    <div id="loading${id}">Reading Image...</div>
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
                     <div id="graph${id}"></div>
-                    <h2>Bing Answer</h2>
+                    <h1>Bing Answer</h1>
                     <div id="bingHeader${id}"></div>
                     <div id="bing${id}"></div>`;
           socket.emit("read", { img, id });
           for (const entry in msg.content) {
             progress.latex += 1;
             let id = String(Math.random()).replace("0.", "");
-            html += `<div id="loading${id}">Reading Image...</div>
+            html += `<h1>Math Answer</h1>
+                    <div id="loading${id}">Reading Image...</div>
                     <div id="base${id}"></div>
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
                     <div id="graph${id}"></div>
-                    <h2>Bing Answer</h2>
+                    <h1>Bing Answer</h1>
                     <div id="bingHeader${id}"></div>
                     <div id="bing${id}"></div>`;
             socket.emit("read", { img: msg.content[entry], id });

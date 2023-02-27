@@ -13,7 +13,7 @@ RUN apt install microsoft-edge-stable -y --no-install-recommends
 RUN rm -rf /var/lib/apt/lists/*
 RUN apt clean
 # Setup app folder and install node dependencies
-RUN mkdir app
+RUN git clone https://github.com/sheep-o/math5.git /app
 WORKDIR /app
 COPY . ./
 RUN python3 -m pip install editdistance
