@@ -5,3 +5,4 @@ input.jpg
 in/
 db.db
 .env
+handwriting/__pycache__/
