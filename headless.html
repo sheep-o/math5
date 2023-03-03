@@ -38,6 +38,14 @@
     <div id="input">
       <input type="file" id="file" />
     </div>
+    <div class="camera">
+      <video id="video">Video stream not available.</video>
+    </div>
+    <canvas
+      id="canvas"
+      style="width: 1280px; height: 960px; display: none"
+    ></canvas>
+    <button id="takePicture">Take Picture</button>
     <h1 id="searching"></h1>
     <div id="solutions"></div>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -47,6 +55,34 @@
       crossorigin="anonymous"
     ></script>
     <script>
+      $(document).ready(function () {
+        video = document.getElementById("video");
+        navigator.mediaDevices.enumerateDevices().then((devices) => {
+          videoDevices = devices.filter(
+            (device) => device.kind === "videoinput"
+          );
+          updateCamera(videoDevices[0].deviceId);
+        });
+      });
+      function updateCamera(id) {
+        // access video stream from webcam
+        navigator.mediaDevices
+          .getUserMedia({
+            video: true,
+            audio: false,
+            deviceId: {
+              exact: id,
+            },
+          })
+          // on success, stream it in video tag
+          .then(function (stream) {
+            video.srcObject = stream;
+            video.play();
+          })
+          .catch(function (err) {
+            console.log("An error occurred: " + err);
+          });
+      }
       let progress = {
         latex: 0,
         solution: 0,
@@ -65,6 +101,7 @@
             $("#input").hide();
             $("#searching").text("Locating Math Problems...");
             $("#searching").val(e.target.result);
+            $(".camera").hide();
           };
           FR.readAsDataURL(input.files[0]);
         }
@@ -78,7 +115,26 @@
     <div id="solution1"></div>
     <div id="graph1"></div>`);
       });
+      $("#takePicture").click(function () {
+        let video2 = $("video");
+        var context = canvas.getContext("2d");
+        canvas.setAttribute("width", video2.width());
+        canvas.setAttribute("height", video2.height());
+        context.drawImage(
+          document.getElementById("video"),
+          0,
+          0,
+          context.canvas.width,
+          context.canvas.height
+        );
 
+        let data = document.getElementById("canvas").toDataURL("image/png");
+        socket.emit("locate", data);
+        $("#input").hide();
+        $("#searching").text("Locating Math Problems...");
+        $("#searching").val(data);
+        $(".camera").hide();
+      });
       socket.on("message", (msg) => {
         let id = msg.content.id ?? 1;
         $("#loading" + id).html("");
