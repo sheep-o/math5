@@ -101,7 +101,12 @@ io.on("connection", (socket) => {
                 "Recognized6759347634567835768345678534267854:"
               );
               text = text[text.length - 1];
-              res(text.trim());
+              text = text.trim();
+              if (text.search(/[a-zA-Z]/) === -1) {
+                res("");
+              } else {
+                res(text);
+              }
             } else {
               console.log(err);
               res("");
@@ -137,6 +142,7 @@ io.on("connection", (socket) => {
       String(question),
     ]);
     if (answers.length > 0) {
+      console.log("Using cached answer to " + question);
       const answer = JSON.parse(answers[0].answer);
       socket.send({
         type: "answer",
@@ -192,15 +198,12 @@ io.on("connection", (socket) => {
     }
     await new Promise((res) => setTimeout(res, 4000));
     await page.goto(
-      `https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx`
+      `https://www.bing.com/search?q=${encodeURIComponent(question)}}`
     );
     await new Promise((res) => setTimeout(res, 1000));
     const input = await page
-      .waitForFunction(() =>
-        document
-          .querySelector(".cib-serp-main")
-          .shadowRoot.querySelector("#cib-action-bar-main")
-          .shadowRoot.querySelector("#searchbox")
+      .waitForFunction(
+        () => document.querySelectorAll(".cib-serp-main")[1] !== undefined
       )
       .catch(() => "1");
     if (input === "1") {
@@ -208,26 +211,22 @@ io.on("connection", (socket) => {
         type: "answer",
         content: {
           question,
-          result: ["Failed to reach Bing"],
+          result: ["This question is not supported/understood"],
           id,
         },
       });
       connect.close();
       browser.close();
-      console.error("Failed to reach Bing 2");
+      console.error("No valid answer for this question");
       return;
     }
-    await input.type(question);
-    await page.keyboard.press("Enter");
     const lol = await page
       .waitForFunction(
         () =>
           document
-            .querySelector(".cib-serp-main")
-            .shadowRoot.querySelector("#cib-action-bar-main")
-            .shadowRoot.querySelector(".root")
-            .children[0].shadowRoot.querySelector(".typing-control-item")
-            .disabled
+            .querySelectorAll(".cib-serp-main")[1]
+            .shadowRoot.querySelector("cib-typing-indicator")
+            .shadowRoot.querySelector("#stop-responding-button").disabled
       )
       .catch(() => "1");
     if (lol === "1") {
@@ -248,14 +247,12 @@ io.on("connection", (socket) => {
     const result = await page
       .evaluate(() => {
         const elements = document
-          .querySelector(".cib-serp-main")
+          .querySelectorAll(".cib-serp-main")[1]
           .shadowRoot.querySelector("#cib-conversation-main")
-          .shadowRoot.querySelector("#cib-chat-main").children;
-        const elements2 = elements[elements.length - 2].shadowRoot
-          .querySelector(".response-message-group")
-          .shadowRoot.querySelector("[type=text]")
+          .shadowRoot.querySelector("cib-message-group")
+          .shadowRoot.querySelector(".cib-message-main")
           .shadowRoot.querySelector(".ac-textBlock").children;
-        return Object.values(elements2).map((e) =>
+        return Object.values(elements).map((e) =>
           Object.values(e.childNodes)
             .filter((e) => (e.classList ?? [0])[0] != "ac-anchor")
             .map((e) => e.textContent)
