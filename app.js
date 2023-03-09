@@ -153,8 +153,8 @@ io.on("connection", (socket) => {
     }
     const browser = await puppeteer.launch({
       defaultViewport: {
-        width: 1280,
-        height: 720,
+        width: 1920,
+        height: 1080,
       },
       args: ["--no-sandbox"],
     });
@@ -180,7 +180,9 @@ io.on("connection", (socket) => {
     );
     await page.goto("https://bing.com");
     let reuslt = await page
-      .evaluate(`document.cookie = "_U=${process.env.MICROSOFT}"`)
+      .evaluate(
+        `document.cookie = "_U=${process.env.MICROSOFT}";document.cookie = "SRCHHPGUSR=CHTRSP=2"`
+      )
       .catch(() => "1");
     if (reuslt === "1") {
       socket.send({
@@ -198,13 +200,11 @@ io.on("connection", (socket) => {
     }
     await new Promise((res) => setTimeout(res, 4000));
     await page.goto(
-      `https://www.bing.com/search?q=${encodeURIComponent(question)}}`
+      `https://www.bing.com/search?q=${encodeURIComponent(question)}`
     );
     await new Promise((res) => setTimeout(res, 1000));
     const input = await page
-      .waitForFunction(
-        () => document.querySelectorAll(".cib-serp-main")[1] !== undefined
-      )
+      .waitForFunction(`document.querySelectorAll(".cib-serp-main")[1]`)
       .catch(() => "1");
     if (input === "1") {
       socket.send({
