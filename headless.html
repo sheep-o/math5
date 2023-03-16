@@ -173,9 +173,10 @@
             progress.bing += 1;
           }
         } else if (msg.type === "answer") {
-          if (msg.content.result[0] == "Failed to reach Bing") {
-            socket.emit("answer", { question: msg.content.question, id });
-          } else {
+          $("#bing" + id).html(
+            `<p>${msg.content.result.replace(/\[\^\d\^\]/g, "")}</p>`
+          );
+          if (msg.content.finished) {
             progress.bing -= 1;
             if (
               progress.solution <= 0 &&
@@ -185,9 +186,6 @@
               $("#finished").show();
               $("#finished").text("Finished");
             }
-            $("#bing" + id).html(
-              msg.content.result.map((e) => `<p>${e}</p>`).join("")
-            );
           }
         } else if (msg.type === "solution") {
           let html = "";

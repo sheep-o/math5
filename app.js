@@ -8,9 +8,8 @@ const fs = require("fs/promises");
 const { exec } = require("child_process");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
-const sharp = require("sharp");
 const dotenv = require("dotenv");
-const puppeteer = require("puppeteer");
+fs.mkdir("database").catch(() => 1);
 dotenv.config({ path: ".env" });
 server.listen(3000, (_) => {
   console.log("listening...");
@@ -124,7 +123,8 @@ io.on("connection", (socket) => {
         type: "answer",
         content: {
           question,
-          result: ["Please set the MICROSOFT environment variable"],
+          result: "Please set the MICROSOFT environment variable",
+          finished: true,
           id,
         },
       });
@@ -132,7 +132,7 @@ io.on("connection", (socket) => {
       return;
     }
     const connect = await open({
-      filename: "db.db",
+      filename: "database/db.db",
       driver: sqlite3.Database,
     });
     await connect.run(
@@ -143,136 +143,49 @@ io.on("connection", (socket) => {
     ]);
     if (answers.length > 0) {
       console.log("Using cached answer to " + question);
-      const answer = JSON.parse(answers[0].answer);
+      const answer = answers[0].answer;
       socket.send({
         type: "answer",
-        content: { result: answer, id, question },
+        content: { result: answer, id, question, finished: true },
       });
       connect.close();
       return;
     }
-    const browser = await puppeteer.launch({
-      defaultViewport: {
-        width: 1920,
-        height: 1080,
-      },
-      args: ["--no-sandbox"],
-    });
-
-    // 2. Open a new page
-    const page = await browser.newPage().catch(() => "1");
-    if (page === "1") {
-      socket.send({
-        type: "answer",
-        content: {
-          question,
-          result: ["Failed to reach Bing"],
-          id,
+    const { BingChat } = await import("bing-chat");
+    const api = new BingChat({ cookie: process.env.MICROSOFT });
+    let lastMessage = 0;
+    const result = (
+      await api.sendMessage(question, {
+        onProgress: (partialResponse) => {
+          if (Date.now() - lastMessage < 500) return;
+          lastMessage = Date.now();
+          socket.send({
+            type: "answer",
+            content: {
+              result: partialResponse.text,
+              question,
+              id,
+              finished: false,
+            },
+          });
         },
-      });
-      console.error("Failed to reach Bing");
-      connect.close();
-      browser.close();
-      return;
-    }
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.100.0"
-    );
-    await page.goto("https://bing.com");
-    let reuslt = await page
-      .evaluate(
-        `document.cookie = "_U=${process.env.MICROSOFT}";document.cookie = "SRCHHPGUSR=CHTRSP=2"`
-      )
-      .catch(() => "1");
-    if (reuslt === "1") {
-      socket.send({
-        type: "answer",
-        content: {
-          question,
-          result: ["Failed to reach Bing"],
-          id,
-        },
-      });
-      console.error("Failed to reach Bing 1");
-      connect.close();
-      browser.close();
-      return;
-    }
-    await new Promise((res) => setTimeout(res, 4000));
-    await page.goto(
-      `https://www.bing.com/search?q=${encodeURIComponent(question)}`
-    );
-    await new Promise((res) => setTimeout(res, 1000));
-    const input = await page
-      .waitForFunction(`document.querySelectorAll(".cib-serp-main")[1]`)
-      .catch(() => "1");
-    if (input === "1") {
-      socket.send({
-        type: "answer",
-        content: {
-          question,
-          result: ["This question is not supported/understood"],
-          id,
-        },
-      });
-      connect.close();
-      browser.close();
-      console.error("No valid answer for this question");
-      return;
-    }
-    const lol = await page
-      .waitForFunction(
-        () =>
-          document
-            .querySelectorAll(".cib-serp-main")[1]
-            .shadowRoot.querySelector("cib-typing-indicator")
-            .shadowRoot.querySelector("#stop-responding-button").disabled
-      )
-      .catch(() => "1");
-    if (lol === "1") {
-      socket.send({
-        type: "answer",
-        content: {
-          question,
-          result: ["Failed to reach Bing"],
-          id,
-        },
-      });
-      connect.close();
-      browser.close();
-      console.error("Failed to reach Bing 3");
-      return;
-    }
-    await new Promise((res) => setTimeout(res, 500));
-    const result = await page
-      .evaluate(() => {
-        const elements = document
-          .querySelectorAll(".cib-serp-main")[1]
-          .shadowRoot.querySelector("#cib-conversation-main")
-          .shadowRoot.querySelector("cib-message-group")
-          .shadowRoot.querySelector(".cib-message-main")
-          .shadowRoot.querySelector(".ac-textBlock").children;
-        return Object.values(elements).map((e) =>
-          Object.values(e.childNodes)
-            .filter((e) => (e.classList ?? [0])[0] != "ac-anchor")
-            .map((e) => e.textContent)
-            .join("")
-        );
       })
-      .catch(() => ["Failed to reach Bing"]);
-    socket.send({ type: "answer", content: { result, question, id } });
-    if (result[0] !== "Failed to reach Bing") {
+    ).text;
+    socket.send({
+      type: "answer",
+      content: { result, question, id, finished: true },
+    });
+    if (result !== "") {
       connect.run("INSERT OR IGNORE INTO answers VALUES (?, ?)", [
         String(question),
-        JSON.stringify(result),
+        result,
       ]);
     }
     connect.close();
-    await browser.close();
   });
   socket.on("solve", async ({ latex, id }) => {
     const connect = await open({
-      filename: "db.db",
+      filename: "database/db.db",
       driver: sqlite3.Database,
     });
     await connect.run(
@@ -409,38 +322,3 @@ app.get("/headless", (req, res) => {
   res.sendFile(__dirname + "/headless.html");
 });
 app.use(express.json({ limit: "50mb" }));
-app.post("/screenshot", async (req, res) => {
-  // 1. Launch the browser
-  const browser = await puppeteer.launch({
-    defaultViewport: {
-      width: 480,
-      height: 480,
-    },
-    args: ["--no-sandbox"],
-  });
-
-  // 2. Open a new page
-  const page = await browser.newPage();
-
-  // 3. Navigate to URL
-  await page.goto("http://localhost:3000/headless");
-  const upload = await page.$("#file");
-  // Turn filetoUpload into a file
-  const fileName = Math.random().toString(36).substring(7);
-  await fs.mkdir("in").catch(() => 1);
-  await fs.writeFile(`in/${fileName}.jpg`, req.body.file, {
-    encoding: "base64",
-  });
-  // Convert to png
-  await sharp(`in/${fileName}.jpg`).png().toFile(`in/${fileName}.png`);
-  await upload.uploadFile(`in/${fileName}.png`);
-  // Wait until finished id has the text finished
-  await page.waitForSelector("#finished", { visible: true }).catch((e) => e);
-  // 4. Take screenshot
-  await page.screenshot({
-    path: `out/${fileName}screenshot.png`,
-    fullPage: true,
-  });
-  await browser.close();
-  res.sendFile(__dirname + `/out/${fileName}screenshot.png`);
-});

@@ -3,6 +3,6 @@ node_modules/
 out/
 input.jpg
 in/
-db.db
+database
 .env
 handwriting/__pycache__/

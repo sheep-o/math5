@@ -112,13 +112,9 @@
           }
           $("#2loading" + id).html("");
         } else if (msg.type === "answer") {
-          if (msg.content.result[0] == "Failed to reach Bing") {
-            socket.emit("answer", { question: msg.content.question, id });
-          } else {
-            $("#bing" + id).html(
-              msg.content.result.map((e) => `<p>${e}</p>`).join("")
-            );
-          }
+          $("#bing" + id).html(
+            `<p>${msg.content.result.replace(/\[\^\d\^\]/g, "")}</p>`
+          );
         } else if (msg.type === "solution") {
           let html = "";
           msg.content.solution.forEach((item) => {
