@@ -9,6 +9,7 @@ const { exec } = require("child_process");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 const dotenv = require("dotenv");
+const { rm, existsSync } = require("fs");
 fs.mkdir("database").catch(() => 1);
 dotenv.config({ path: ".env" });
 server.listen(3000, (_) => {
@@ -169,6 +170,7 @@ io.on("connection", (socket) => {
             },
           });
         },
+        variant: 'Precise',
       })
     ).text;
     socket.send({
@@ -322,3 +324,67 @@ app.get("/headless", (req, res) => {
   res.sendFile(__dirname + "/headless.html");
 });
 app.use(express.json({ limit: "50mb" }));
+
+app.post("/screenshot", async (req, res) => {
+  const puppeteer = require("puppeteer");
+  const sharp = require("sharp");
+  // 1. Launch the browser
+  const browser = await puppeteer.launch({
+    defaultViewport: {
+      width: 480,
+      height: 480,
+    },
+    args: ["--no-sandbox"],
+  });
+  const fileName = Math.random().toString(36).substring(7);
+  console.log("New screenshot: ", fileName);
+  // 2. Open a new page
+  const page = await browser.newPage();
+  // 3. Navigate to URL
+  await page.goto("http://localhost:3000/headless");
+  const upload = await page.$("#file");
+  // Turn filetoUpload into a file
+  await fs.mkdir("in").catch(() => 1);
+  await fs.writeFile(`in/${fileName}.jpg`, req.body.file, {
+    encoding: "base64",
+  });
+  // Convert to png
+  await sharp(`in/${fileName}.jpg`).png().toFile(`in/${fileName}.png`);
+  await upload.uploadFile(`in/${fileName}.png`);
+  // 4. Take screenshot
+  await page.screenshot({
+    path: `out/${fileName}screenshot.png`,
+    fullPage: true,
+  });
+  res.send(fileName);
+  // Wait until finished id has the text finished
+  counter = 0;
+  while (counter < 120) {
+    counter += 1;
+    await new Promise((res) => setTimeout(res, 1000));
+    // 4. Take screenshot
+    await page.screenshot({
+      path: `out/${fileName}screenshot.png`,
+      fullPage: true,
+    });
+    if (await page.$("#finished").visible) break;
+  }
+  await browser.close();
+  await new Promise((res) => setTimeout(res, 10000));
+  rm(`in/${fileName}.jpg`);
+  console.log("Finished screenshot: ", fileName);
+});
+
+app.get("/screenshot", async (req, res) => {
+  const fileName = req.query.fileName;
+  if (!fileName) {
+    res.send("No file name");
+    return;
+  }
+  // Checks if file exist
+  if (!existsSync(__dirname+`/out/${fileName}screenshot.png`)) {
+    res.send("File not found");
+    return;
+  }
+  res.sendFile(__dirname + `/out/${fileName}screenshot.png`);
+});
