@@ -383,6 +383,7 @@ app.get("/screenshot", async (req, res) => {
   }
   // Checks if file exist
   if (!existsSync(__dirname+`/out/${fileName}screenshot.png`)) {
+    res.statusCode = 404;
     res.send("File not found");
     return;
   }
