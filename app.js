@@ -371,7 +371,7 @@ app.post("/screenshot", async (req, res) => {
   }
   await browser.close();
   await new Promise((res) => setTimeout(res, 10000));
-  rm(`in/${fileName}.jpg`);
+  rm(`in/${fileName}.jpg`, () => {});
   console.log("Finished screenshot: ", fileName);
 });
 
