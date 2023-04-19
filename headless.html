@@ -34,7 +34,6 @@
     </style>
   </head>
   <body>
-    <p id="finished" style="display: none"></p>
     <div id="input">
       <input type="file" id="file" />
     </div>
@@ -151,14 +150,6 @@
             $("#loading" + id).html(``);
             $("#2loading" + id).html(``);
             $("#solution" + id).html(``);
-            if (
-              progress.solution <= 0 &&
-              progress.latex <= 0 &&
-              progress.bing <= 0
-            ) {
-              $("#finished").show();
-              $("#finished").text("Finished");
-            }
           } else {
             $("#2loading" + id).html("");
             socket.emit("solve", { latex: msg.content.latex, id });
@@ -178,14 +169,6 @@
           );
           if (msg.content.finished) {
             progress.bing -= 1;
-            if (
-              progress.solution <= 0 &&
-              progress.latex <= 0 &&
-              progress.bing <= 0
-            ) {
-              $("#finished").show();
-              $("#finished").text("Finished");
-            }
           }
         } else if (msg.type === "solution") {
           let html = "";
@@ -201,15 +184,6 @@
               });
             }
           });
-          if (
-            progress.solution <= 0 &&
-            progress.latex <= 0 &&
-            progress.bing <= 0 &&
-            progress.bing <= 0
-          ) {
-            $("#finished").show();
-            $("#finished").text("Finished");
-          }
           $("#solution" + id).html(html);
         } else if (msg.type === "graph") {
           let html = "";

@@ -156,22 +156,27 @@ io.on("connection", (socket) => {
     const api = new BingChat({ cookie: process.env.MICROSOFT });
     let lastMessage = 0;
     const result = (
-      await api.sendMessage(question, {
-        onProgress: (partialResponse) => {
-          if (Date.now() - lastMessage < 500) return;
-          lastMessage = Date.now();
-          socket.send({
-            type: "answer",
-            content: {
-              result: partialResponse.text,
-              question,
-              id,
-              finished: false,
-            },
-          });
-        },
-        variant: 'Precise',
-      })
+      await api
+        .sendMessage(question, {
+          onProgress: (partialResponse) => {
+            if (Date.now() - lastMessage < 500) return;
+            lastMessage = Date.now();
+            socket.send({
+              type: "answer",
+              content: {
+                result: partialResponse.text,
+                question,
+                id,
+                finished: false,
+              },
+            });
+          },
+          variant: "Precise",
+        })
+        .catch((e) => {
+          console.log("Failed to get answer from bing");
+          return { text: "" };
+        })
     ).text;
     socket.send({
       type: "answer",
@@ -359,6 +364,7 @@ app.post("/screenshot", async (req, res) => {
   res.send(fileName);
   // Wait until finished id has the text finished
   counter = 0;
+  started = false;
   while (counter < 120) {
     counter += 1;
     await new Promise((res) => setTimeout(res, 1000));
@@ -367,11 +373,31 @@ app.post("/screenshot", async (req, res) => {
       path: `out/${fileName}screenshot.png`,
       fullPage: true,
     });
-    if (await page.$("#finished").visible) break;
+    console.log(await page.evaluate(() => {
+      return (
+        progress
+      );
+    }));
+    if (
+      await page.evaluate(() => {
+        return (
+          progress.solution <= 0 &&
+          progress.latex <= 0 &&
+          progress.bing <= 0 &&
+          progress.bing <= 0
+        );
+      })
+    ) {
+      if (started) {
+        break;
+      }
+    } else if (!started) {
+      started = true;
+    }
   }
   await browser.close();
-  await new Promise((res) => setTimeout(res, 10000));
-  rm(`in/${fileName}.jpg`, () => {});
+  await new Promise((res) => setTimeout(res, 5000));
+  rm(__dirname + `/out/${fileName}screenshot.png`, () => {});
   console.log("Finished screenshot: ", fileName);
 });
 
@@ -382,7 +408,7 @@ app.get("/screenshot", async (req, res) => {
     return;
   }
   // Checks if file exist
-  if (!existsSync(__dirname+`/out/${fileName}screenshot.png`)) {
+  if (!existsSync(__dirname + `/out/${fileName}screenshot.png`)) {
     res.statusCode = 404;
     res.send("File not found");
     return;
