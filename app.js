@@ -30,11 +30,19 @@ io.on("connection", (socket) => {
     let fileName = `in/in${String(Math.random()).replace("0.", "")}.png`;
     let output = `out/${String(Math.random()).replace("0.", "")}/`;
     exec("mkdir out");
-    await fs
+    if (img.search("data:image/png;base64,") !== -1) {
+      await fs
       .writeFile(fileName, img.replace("data:image/png;base64,", ""), {
         encoding: "base64",
       })
       .catch((e) => e);
+    } else {
+      await fs
+      .writeFile(fileName, img.replace("data:image/jpeg;base64,", ""), {
+        encoding: "base64",
+      })
+      .catch((e) => e);
+    }
     exec(`./readtext.py ${fileName} ${output}`, async function () {
       let files = [];
       try {
