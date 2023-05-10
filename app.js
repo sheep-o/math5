@@ -32,16 +32,16 @@ io.on("connection", (socket) => {
     exec("mkdir out");
     if (img.search("data:image/png;base64,") !== -1) {
       await fs
-      .writeFile(fileName, img.replace("data:image/png;base64,", ""), {
-        encoding: "base64",
-      })
-      .catch((e) => e);
+        .writeFile(fileName, img.replace("data:image/png;base64,", ""), {
+          encoding: "base64",
+        })
+        .catch((e) => e);
     } else {
       await fs
-      .writeFile(fileName, img.replace("data:image/jpeg;base64,", ""), {
-        encoding: "base64",
-      })
-      .catch((e) => e);
+        .writeFile(fileName, img.replace("data:image/jpeg;base64,", ""), {
+          encoding: "base64",
+        })
+        .catch((e) => e);
     }
     exec(`./readtext.py ${fileName} ${output}`, async function () {
       let files = [];
@@ -381,11 +381,11 @@ app.post("/screenshot", async (req, res) => {
       path: `out/${fileName}screenshot.png`,
       fullPage: true,
     });
-    console.log(await page.evaluate(() => {
-      return (
-        progress
-      );
-    }));
+    console.log(
+      await page.evaluate(() => {
+        return progress;
+      })
+    );
     if (
       await page.evaluate(() => {
         return (

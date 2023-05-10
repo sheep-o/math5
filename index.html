@@ -32,6 +32,7 @@
         font-weight: 900;
       }
     </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   </head>
   <body>
     <div id="input">
@@ -177,29 +178,42 @@
       });
       $(document).ready(function () {
         video = document.getElementById("video");
+        updateCameraList();
+      });
+      function updateCameraList() {
+        let count = 1;
         navigator.mediaDevices.enumerateDevices().then((devices) => {
           videoDevices = devices.filter(
             (device) => device.kind === "videoinput"
           );
+          console.log(devices);
           updateCamera(videoDevices[0].deviceId);
           videoDevices = videoDevices.map((videoDevice) => {
-            return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
+            return `<option value="${videoDevice.deviceId}">${
+              videoDevice.label || `Camera ${count++}`
+            }</option>`;
           });
           $("#cameraSelect").html(videoDevices.join(""));
         });
-      });
+      }
       function updateCamera(id) {
         // access video stream from webcam
         navigator.mediaDevices
           .getUserMedia({
-            video: true,
-            audio: false,
-            deviceId: {
-              exact: id,
+            video: {
+              deviceId: {
+                exact: id,
+              },
             },
+            audio: false,
           })
           // on success, stream it in video tag
           .then(function (stream) {
+            console.log(stream.getTracks());
+            try {
+              video.srcObject.getTracks().forEach((e) => e.stop());
+            } catch (e) {}
+            console.log(stream.height);
             video.srcObject = stream;
             video.play();
           })
