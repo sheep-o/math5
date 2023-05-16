@@ -95,7 +95,7 @@
         if (msg.type === "text") {
           $("#2loading" + id).html("Solving Problem...");
           $("#base" + id).html(
-            `<i>${msg.content.latex}</i>` + "<br>" + msg.content.html
+            `<i>${msg.content.latex}</i>` + "<br>" + msg.content.data
           );
           if (msg.content.latex == "error" || msg.content.latex == "") {
             $("#base" + id).html(
