@@ -381,11 +381,6 @@ app.post("/screenshot", async (req, res) => {
       path: `out/${fileName}screenshot.png`,
       fullPage: true,
     });
-    console.log(
-      await page.evaluate(() => {
-        return progress;
-      })
-    );
     if (
       await page.evaluate(() => {
         return (
