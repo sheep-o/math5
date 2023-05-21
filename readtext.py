@@ -64,32 +64,15 @@ def east_detect(image):
     #     ratios
         # draw the bounding box on the image
         # cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 5)
-    for (startX, startY, endX, endY) in oldBoxes:
-        # scale the bounding box coordinates based on the respective
-        # ratios
-        # draw the bounding box on the image
-        cv2.rectangle(image, (startX, startY), (endX, endY), (255, 0, 0), 2)
     for (startX, startY, endX, endY) in boxes:
         # scale the bounding box coordinates based on the respective
         # ratios
         # draw the bounding box on the image
         images.append(image[startY:endY, startX:endX])
-        cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)
+        # cv2.rectangle(image, (startX, startY), (endX, endY), (255, 0, 0), 2)
     print(time.time() - start)
-    return image
     return images
 
-cap = cv2.VideoCapture(1)
-    
-while True: 
-    
-    ret,img=cap.read()
-    
-    cv2.imshow('Video', east_detect(img))
-    
-    if(cv2.waitKey(10) & 0xFF == ord('b')):
-        break
-exit()
 
 frame = cv2.imread(sys.argv[1])
 images = east_detect(frame)
