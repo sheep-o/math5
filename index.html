@@ -105,11 +105,11 @@
             socket.emit("solve", { latex: msg.content.latex, id });
           }
           if (msg.content.text == "") {
-            $("#bingHeader" + id).html(`Could not find any text for bing`);
+            $("#bingHeader" + id).html(`Could not find any text for GPT-4`);
           } else {
             socket.emit("answer", { question: msg.content.text, id });
             $("#bingHeader" + id).html(msg.content.text);
-            $("#bing" + id).html("Asking Bing for answers...");
+            $("#bing" + id).html("Asking GPT-4 for answers...");
           }
           $("#2loading" + id).html("");
         } else if (msg.type === "answer") {
@@ -155,7 +155,7 @@
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
                     <div id="graph${id}"></div>
-                    <h1>Bing Answer</h1>
+                    <h1>GPT-4 Answer</h1>
                     <div id="bingHeader${id}"></div>
                     <div id="bing${id}"></div>`;
           socket.emit("read", { img, id });
@@ -168,7 +168,7 @@
                     <div id="2loading${id}"></div>
                     <div id="solution${id}"></div>
                     <div id="graph${id}"></div>
-                    <h1>Bing Answer</h1>
+                    <h1>GPT-4 Answer</h1>
                     <div id="bingHeader${id}"></div>
                     <div id="bing${id}"></div>`;
             socket.emit("read", { img: msg.content[entry], id });
