@@ -101,6 +101,7 @@
             $("#searching").text("Locating Math Problems...");
             $("#searching").val(e.target.result);
             $(".camera").hide();
+            $("#takePicture").hide();
           };
           FR.readAsDataURL(input.files[0]);
         }
@@ -133,6 +134,7 @@
         $("#searching").text("Locating Math Problems...");
         $("#searching").val(data);
         $(".camera").hide();
+        $("#takePicture").hide();
       });
       socket.on("message", (msg) => {
         let id = msg.content.id ?? 1;
