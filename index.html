@@ -117,7 +117,7 @@
           $("#2loading" + id).html("");
         } else if (msg.type === "answer") {
           $("#bing" + id).html(
-            `<p>${msg.content.result.replace(/\[\^\d\^\]/g, "")}</p>`
+            `<p>${msg.content.result.replace(/\[\^\d\^\]/g, "").replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')}</p>`
           );
         } else if (msg.type === "solution") {
           let html = "";
