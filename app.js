@@ -180,7 +180,6 @@ io.on("connection", (socket) => {
               },
             });
           },
-          variant: "Precise",
         })
         .catch((e) => {
           console.log("Failed to get answer from bing");
