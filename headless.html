@@ -151,7 +151,9 @@
           $("#base" + id).html(msg.content.data);
           progress.latex -= 1;
           if (msg.content.latex == "error" || msg.content.latex == "") {
-            $("#base" + id).html(``);
+            $("#base" + id).html(
+              `<h2>Could not find any math problems in the image.</h2>`
+            );
             $("#loading" + id).html(``);
             $("#2loading" + id).html(``);
             $("#solution" + id).html(``);
