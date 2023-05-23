@@ -110,7 +110,8 @@ io.on("connection", (socket) => {
               );
               text = text[text.length - 1];
               text = text.trim();
-              if (text.search(/[a-zA-Z]/) === -1) {
+              let length = text.replaceAll(/[^a-zA-Z]/g, "").length;
+              if (length < 3) {
                 res("");
               } else {
                 res(text);
